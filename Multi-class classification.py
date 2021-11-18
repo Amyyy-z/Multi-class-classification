@@ -1,4 +1,12 @@
-# download all the required files
+# @Date                 : 2021-03-04
+# @Author               : Xinyu Zhang (Amy)
+# @Python               : 3.7
+# @Tensorflow Version   : 2.1.0
+# @Other models can be viewed through: https://keras.io/api/applications/
+
+
+# import packages
+
 import tensorflow.keras
 from tensorflow.keras import models, layers
 from tensorflow.keras.models import Model, model_from_json, Sequential
@@ -29,9 +37,9 @@ from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
 
 # identify the path of the images
-data_dir = r'C:/Users/Administrator/Desktop/Ultrasound multi data/'
+data_dir = r'C:/.../Ultrasound multi data/' 
 contents = os.listdir(data_dir)
-classes = [each for each in contents if os.path.isdir(data_dir + each)]
+classes = [each for each in contents if os.path.isdir(data_dir + each)]  #labels will be assigned based on the image file name
 
 # label images based on their locations (their file names)
 labels = []
@@ -49,11 +57,11 @@ with tf.Session() as sess:
             print(os.path.basename(file))
             image_value = tf.read_file(os.path.join(class_path, file))
  
-            img = tf.image.decode_jpeg(image_value, channels=3)
+            img = tf.image.decode_jpeg(image_value, channels=3)   # number of channels depending on the image type
             
             tf.global_variables_initializer()
            
-            img= tf.image.resize_images(img, [224,224],method=0)    
+            img= tf.image.resize_images(img, [224,224],method=0)   # 224x224 is suggested
             print(img)
             
             imgput= tf.reshape(img,[1,224,224,3])
@@ -75,6 +83,7 @@ y = labels.eval(session=tf.Session())
 y = tf.strings.to_number(y,tf.int32)
 y = np.array(y)  # convert labels into array
     
+# one_hot_encoder function define with classes = 6
 def one_hot_encode(vec, vals = 6):
 #to one-hot encode the 4- possible labesl
   n = len(vec)
@@ -128,7 +137,7 @@ from sklearn.model_selection import KFold
 from sklearn.model_selection import RepeatedKFold
 from sklearn.model_selection import StratifiedKFold
 
-kf = StratifiedKFold(n_splits=10)  # train and test the model through 10-fold CV
+kf = StratifiedKFold(n_splits=10)  # train and test the model through 10-fold stratified CV
     
 for train_index, test_index in kf.split(X, y):
     print("Train:", train_index, "Test:", test_index)
@@ -139,7 +148,7 @@ from tensorflow.keras import layers, Model, Sequential, regularizers
 
 # Model construction
 def entry_flow(inputs) :
-    x = Conv2D(32, 7, strides = 2, padding='same')(inputs)
+    x = Conv2D(32, 3, strides = 2, padding='same')(inputs)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
 
@@ -271,7 +280,7 @@ for i in kf.split(X, y):
     CM_summary = np.mat(np.zeros((6,6)))
     Epoch_summary = []
 
-    epochs = 20   #35 depending on the model
+    epochs = 30   #35 depending on the model
     epsilon = 0
     
     for epoch in range(1,epochs+1):
@@ -297,9 +306,6 @@ for i in kf.split(X, y):
             grads = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-    #     with CV_summary_writer.as_default():
-    #         tf.summary.scalar('train-CrossEntropy', float(loss), step=epoch)
-    #         tf.summary.scalar('train-Accuracy', float(train_accuracy.result() * 100), step=epoch)
         print('-----------------------------------------------------------------')
         print('Training time: ',time.perf_counter() - t1)
 
@@ -330,11 +336,11 @@ for i in kf.split(X, y):
         print(CM)
         print('\nClassification Report\n')
         print(classification_report(test_GT,test_pred,labels=range(6),target_names=['Normal', 'Thyroiditis', 'Nodule', 
-                                                                                    'Goiter', 'Adenoma', 'Cancer']))
+                                                                                    'Goiter', 'Adenoma', 'Cancer']))  # define the labels for the confusion matrix
 
         Acc = accuracy_score(test_GT,test_pred)
         if Acc > epsilon:
-            epsilon = Acc
+            epsilon = Acc  # Higest acc for each fold will be stored to evaluate whether the model is stable
             Best_CM = np.array(CM)
             Best_GT = test_GT
             Best_pred = test_pred
@@ -349,10 +355,6 @@ for i in kf.split(X, y):
     Final_GT.extend(Best_GT)
     Final_pred.extend(Best_pred)
     
-#     print("GT:",len(ground_truth),type(ground_truth), ground_truth)
-#     print("pred:", len(prediction), type(prediction), prediction)
-#     print("F_GT:", len(Final_GT), type(Final_GT), Final_GT)
-#     print("F_pre:", len(Final_pred), type(Final_pred), Final_pred)
     
 print("---------------------------------------------------------------------")
 print("Fold Summary:")
